@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ЖК «Альто»: квартиры в 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;700&family=Unbounded:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#efe9dc;--card:#f9f6ef;--ink:#2a2d2e;--mut:#76766e;--acc:#1f6f55;--line:#ddd5c3;--wall:#ebe3d3;--sold:#b3b1a9;--dim:#8a8a82;--ground:#d6ceba;--s1:#fbeed8;--s2:#cddfe3;--glow:rgba(255,246,222,.95);--lawn:#9fb685;--road:#5a5d5e;--stone:#e6dfce;--sh:0 10px 30px rgba(60,50,30,.13)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141716;--card:#1e2220;--ink:#e9e6dd;--mut:#929489;--acc:#47b88f;--line:#313734;--wall:#6a675e;--sold:#454846;--dim:#262a28;--ground:#202523;--s1:#0d1618;--s2:#1b312f;--glow:rgba(71,184,143,.18);--lawn:#2b4636;--road:#181b1b;--stone:#3b3e3b;--sh:0 10px 30px rgba(0,0,0,.45)}}
+:root[data-theme="dark"]{--bg:#141716;--card:#1e2220;--ink:#e9e6dd;--mut:#929489;--acc:#47b88f;--line:#313734;--wall:#6a675e;--sold:#454846;--dim:#262a28;--ground:#202523;--s1:#0d1618;--s2:#1b312f;--glow:rgba(71,184,143,.18);--lawn:#2b4636;--road:#181b1b;--stone:#3b3e3b;--sh:0 10px 30px rgba(0,0,0,.45)}
+*{box-sizing:border-box}
+html{height:100%;background:var(--bg);scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:15px/1.45 "Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+.mut{color:var(--mut)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px}
+.brand{display:flex;gap:12px;align-items:center}.brand svg{width:34px;height:34px;color:var(--acc);flex:none}
+.brand b{display:block;font:500 18px/1.2 Unbounded,"Arial Black",system-ui,sans-serif}.brand small{color:var(--mut);font-size:13px}
+.btn{background:var(--acc);color:var(--bg);border:0;border-radius:12px;padding:11px 20px;font-weight:700;transition:filter .2s,transform .2s}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}.btn:disabled{background:var(--sold);cursor:default;transform:none;filter:none}
+.btn.wide{width:100%;margin-top:16px}.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.tabs{display:none;gap:8px;padding:0 12px 8px}.tabs button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px}.tabs .on{background:var(--ink);color:var(--bg)}
+main{flex:1;min-height:0;display:flex;gap:14px;padding:0 14px 14px}
+.stage{position:relative;flex:1;min-width:0;border-radius:26px;overflow:hidden;background:linear-gradient(var(--s1),var(--s2) 40%);box-shadow:var(--sh)}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.tools{position:absolute;left:14px;top:14px;display:flex;gap:8px}
+.tools button{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:500}
+#fl{position:absolute;top:14px;left:50%;transform:translateX(-50%);font:500 15px Unbounded,sans-serif;background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:10px}
+#tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);padding:5px 10px;border-radius:8px;font-size:13px;white-space:nowrap}
+.hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:12px;color:var(--mut);pointer-events:none}
+#load{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;background:var(--bg);transition:opacity .7s}
+#load.off{opacity:0;pointer-events:none}#load i{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+#panel{position:absolute;top:14px;right:14px;bottom:14px;width:330px;background:var(--card);border-radius:20px;box-shadow:var(--sh);padding:20px;overflow:auto;transform:translateX(120%);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+#panel.open{transform:none}
+.x{position:absolute;top:14px;right:14px;border:0;background:var(--line);border-radius:50%;width:30px;height:30px}
+.ph{font:500 17px/1.3 Unbounded,sans-serif;padding-right:36px}
+.chip{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc)}.chip.sold{background:var(--line);color:var(--mut)}
+.big{font:500 36px/1.1 Unbounded,sans-serif;margin-top:14px}.price{font-size:22px;font-weight:700;color:var(--acc);margin-top:8px}
+.pl{width:100%;display:block;margin-top:14px}.pl rect{fill:var(--card);stroke:var(--ink);stroke-width:1.2}.pl text{fill:var(--ink);font-family:"Golos Text",sans-serif}
+.list{width:380px;flex:none;min-height:0;display:flex;flex-direction:column;background:var(--card);border-radius:18px;box-shadow:var(--sh)}
+.ctl{padding:14px;display:grid;gap:10px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}.seg button{border:1px solid var(--line);background:none;border-radius:8px;padding:6px 11px;font-size:13px}.seg .on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.rg{display:grid;gap:2px;font-size:13px}.rg input{width:100%;accent-color:var(--acc);margin:0}
+#cards{flex:1;overflow:auto;padding:0 12px 12px;display:grid;gap:8px;align-content:start}
+.card{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--sh)}.card.sel{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}.card.sold{opacity:.55}
+.mini{width:92px;flex:none}.mini .pl{margin:0}.pr{font-weight:700;color:var(--acc)}
+#modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(20,18,12,.5)}
+#fm{background:var(--card);border-radius:20px;padding:24px;width:360px;max-width:100%;display:grid;gap:12px}
+#fm h3{margin:0;font:500 20px Unbounded,sans-serif}#fm p{margin:0}
+#fm input{padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:inherit;font:inherit}
+.row{display:flex;gap:8px;justify-content:flex-end}
+@media(max-width:820px){
+.tabs{display:flex}main{flex-direction:column;padding:0 10px 10px}.list{width:auto;flex:1}
+body[data-tab="3d"] .list,body[data-tab="list"] .stage{display:none}
+header .btn{padding:9px 14px;font-size:13px}.brand small{display:none}
+#panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:64%;border-radius:20px 20px 0 0;transform:translateY(110%)}}
+.stage{background:radial-gradient(80% 55% at 74% 0,var(--glow),transparent 62%),linear-gradient(var(--s1),var(--s2) 42%)}
+.btn{border-radius:999px;padding:11px 22px}
+.btn:not(.ghost):not(:disabled){box-shadow:0 6px 18px color-mix(in srgb,var(--acc) 32%,transparent)}
+.tools button{background:color-mix(in srgb,var(--card) 80%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:999px;padding:8px 16px;transition:background .2s}.tools button:hover{background:var(--card)}
+#fl{border-radius:999px;padding:8px 20px;box-shadow:var(--sh)}
+#panel{background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.pl rect{stroke-width:1.3}
+.card{background:color-mix(in srgb,var(--bg) 35%,var(--card))}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body data-tab="3d">
+<header>
+ <div class="brand"><svg viewBox="0 0 32 32" fill="currentColor"><rect x="6" y="4" width="20" height="5" rx="1.5"/><rect x="6" y="11.5" width="20" height="5" rx="1.5" opacity=".7"/><rect x="6" y="19" width="20" height="5" rx="1.5" opacity=".45"/><rect x="3" y="26" width="26" height="2.5" rx="1"/></svg>
+ <div><b>ЖК «Альто»</b><small>Парковая ул., 12. Сдача в IV квартале 2027</small></div></div>
+ <button class="btn" id="cta">Оставить заявку</button>
+</header>
+<div class="tabs"><button data-t="3d" class="on">3D-модель</button><button data-t="list">Квартиры</button></div>
+<main>
+ <section class="stage" id="stage"><canvas id="cv"></canvas>
+  <div class="tools"><button id="rebuild">Пересобрать</button><button id="back" hidden>Назад к дому</button></div>
+  <div id="fl" hidden></div><div id="tip" hidden></div><div class="hint">Тяните, чтобы вращать. Нажмите на этаж.</div>
+  <div id="panel"></div>
+  <div id="load"><i></i><span>Строим дом…</span></div>
+ </section>
+ <div class="list">
+  <div class="ctl">
+   <div class="seg" id="sort"><button data-v="a1" class="on">Площадь ↑</button><button data-v="a2">Площадь ↓</button><button data-v="p1">Цена ↑</button></div>
+   <div class="seg" id="rm"><button data-v="all" class="on">Все</button><button data-v="0">Студия</button><button data-v="1">1к</button><button data-v="2">2к</button><button data-v="3">3к</button></div>
+   <div class="rg"><span id="rl">Площадь от 20 до 110 м²</span><input id="r1" type="range" min="20" max="110" value="20" aria-label="Площадь от"><input id="r2" type="range" min="20" max="110" value="110" aria-label="Площадь до"></div>
+   <div class="mut" id="cnt"></div>
+  </div>
+  <div id="cards"></div>
+ </div>
+</main>
+<div id="modal" hidden><form id="fm"><h3>Оставить заявку</h3><p class="mut">Менеджер перезвонит в течение 15 минут.</p>
+ <input name="n" placeholder="Ваше имя" required autocomplete="name"><input name="p" type="tel" placeholder="Телефон" required autocomplete="tel">
+ <div class="row"><button type="button" class="btn ghost" data-x>Отмена</button><button class="btn">Отправить</button></div></form></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s),css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim(),
+fm=n=>n.toLocaleString('ru-RU'),cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),
+eb=x=>1+2.70158*(x-1)**3+1.70158*(x-1)**2; // ease-out-back: подъём с отскоком
+const cv=$('#cv'),st=$('#stage'),tip=$('#tip'),panel=$('#panel'),cards=$('#cards');
+const FL=18,FH=1.06,Y0=.5,TN=['Студия','1-комнатная','2-комнатная','3-комнатная'],BASE=[27,41,62,92];
+
+/* ---------- Данные: 11 этажей по 4 квартиры ---------- */
+const A=[];
+for(let f=1;f<=FL;f++)for(let k=0;k<4;k++){
+ const r=(k+f)%4,area=Math.round(BASE[r]+((f*13+k*7)%7-3)*(r==3?2.2:1)),ppm=245000+f*5200+(r==3?8000:0);
+ A.push({id:A.length,f,k,n:(f-1)*4+k+1,r,area,ppm,price:Math.round(area*ppm/1000)*1000,sold:(f*7+k*11+f*k)%5==0});
+}
+/* ---------- Планировки: [x,y,w,h,название,доля площади] ---------- */
+const PL=[
+[[0,0,62,70,'Студия',.62],[62,0,38,34,'Кухня',.16],[62,34,38,18,'Сан.',.08],[62,52,38,18,'Холл',.14]],
+[[0,0,54,46,'Комната',.4],[54,0,46,34,'Кухня',.22],[54,34,22,36,'Сан.',.08],[76,34,24,36,'Холл',.12],[0,46,54,24,'Гард.',.1]],
+[[0,0,44,38,'Спальня',.24],[44,0,56,38,'Гостиная',.34],[0,38,36,32,'Детская',.14],[36,38,26,32,'Холл',.08],[62,38,38,16,'Кухня',.12],[62,54,38,16,'Сан.',.08]],
+[[0,0,36,36,'Спальня',.16],[36,0,34,36,'Детская',.14],[70,0,30,36,'Кабинет',.1],[0,36,50,34,'Гостиная',.24],[50,36,28,34,'Кухня',.14],[78,36,22,16,'Сан.',.05],[78,52,22,18,'Холл',.07]]];
+const TT={'Сан.':'#5b9fb8','Кухня':'#d9a24f','Холл':'#9a9380','Гард.':'#9a9380'};
+function plan(a,lab=1){
+ const S=PL[a.r].reduce((s,q)=>s+q[5],0);let o='<svg class="pl" viewBox="-2 -2 104 74">';
+ for(const[x,y,w,h,nm,sh]of PL[a.r]){o+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill:color-mix(in srgb,${TT[nm]||'var(--acc)'} ${TT[nm]?26:8}%,var(--card))"/>`;
+  if(lab)o+=`<text x="${x+w/2}" y="${y+h/2-1}" text-anchor="middle" font-size="3.8">${nm}<tspan x="${x+w/2}" dy="4.6" opacity=".6">${(a.area*sh/S).toFixed(1).replace('.',',')} м²</tspan></text>`}
+ return o+'<path d="M10 0H34M66 0H92M0 14V40" stroke="var(--acc)" stroke-width="2.8" fill="none"/><path d="M70 70A8 8 0 0 1 78 62" stroke="var(--ink)" fill="none"/></svg>'}
+
+/* ---------- Сцена ---------- */
+if(!window.THREE){$('#load span').textContent='Не удалось загрузить 3D-библиотеку';$('#load i').hidden=true;return}
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true}),S=new THREE.Scene(),cam3=new THREE.PerspectiveCamera(36,1,.1,500);
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+S.fog=new THREE.Fog(0xffffff,60,200);const hemi=new THREE.HemisphereLight(0xfff4e2,0x7d8a78,.9),fill=new THREE.DirectionalLight(0xaecbff,.3);fill.position.set(-12,8,-10);S.add(hemi,fill);
+const sun=new THREE.DirectionalLight(0xffe9c8,1);sun.position.set(11,18,9);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0004;sun.shadow.normalBias=.03;
+Object.assign(sun.shadow.camera,{left:-14,right:14,top:14,bottom:-14,far:60});sun.shadow.camera.updateProjectionMatrix();S.add(sun);
+const C={wall:new THREE.Color(),acc:new THREE.Color(),sold:new THREE.Color(),dim:new THREE.Color(),lawn:new THREE.Color(),road:new THREE.Color(),stone:new THREE.Color()},
+ground=new THREE.Mesh(new THREE.CircleGeometry(230,64).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({roughness:1}));
+ground.receiveShadow=true;ground.position.y=-.5;S.add(ground);
+const lawn=new THREE.MeshStandardMaterial({roughness:1}),road=new THREE.MeshStandardMaterial({roughness:.95}),plz=new THREE.MeshStandardMaterial({roughness:.85}),
+mk=(g,m,y)=>{const o=new THREE.Mesh(g,m);o.position.y=y;o.receiveShadow=true;S.add(o)};
+mk(new THREE.CylinderGeometry(27,27.3,.5,96),lawn,-.25);mk(new THREE.RingGeometry(7.1,8.5,96).rotateX(-Math.PI/2),road,.012);mk(new THREE.CylinderGeometry(6.7,6.7,.05,64),plz,.025);
+const mPole=new THREE.MeshStandardMaterial({color:0x2f3436}),mBulb=new THREE.MeshStandardMaterial({color:0xfff3d6,emissive:0xffd58a,emissiveIntensity:0});
+for(let i=0;i<10;i++){const a=i/10*6.283+.3,g=new THREE.Group(),p=new THREE.Mesh(new THREE.CylinderGeometry(.03,.04,1.1),mPole),b=new THREE.Mesh(new THREE.SphereGeometry(.09,12,8),mBulb);
+ p.position.y=.55;b.position.y=1.15;p.castShadow=true;g.add(p,b);g.position.set(Math.cos(a)*8.9,0,Math.sin(a)*8.9);S.add(g)}
+let dark=0,built=0,envT;const RM=matchMedia('(prefers-reduced-motion:reduce)').matches,pm=new THREE.PMREMGenerator(R),ec=document.createElement('canvas');ec.width=4;ec.height=128;
+function env(){const g=ec.getContext('2d'),l=g.createLinearGradient(0,0,0,128);l.addColorStop(0,css('--s1'));l.addColorStop(.48,css('--s2'));l.addColorStop(.5,css('--lawn'));l.addColorStop(1,css('--lawn'));g.fillStyle=l;g.fillRect(0,0,4,128);
+ const t=new THREE.CanvasTexture(ec);t.mapping=THREE.EquirectangularReflectionMapping;envT&&envT.dispose();envT=pm.fromEquirectangular(t).texture;t.dispose();
+ for(const m of[mOff,mLit,mTw]){m.envMap=envT;m.needsUpdate=true}skyDraw()}
+const theme=()=>{for(const k in C)C[k].set(css('--'+k));dark=new THREE.Color(css('--bg')).r<.3;
+ ground.material.color.set(css('--ground'));S.fog.color.set(css('--s2'));lawn.color.copy(C.lawn);road.color.copy(C.road);plz.color.copy(C.stone);
+ hemi.intensity=dark?.5:.9;sun.intensity=dark?.35:1;fill.intensity=dark?.5:.3;sun.color.set(dark?0x9db4ff:0xffe9c8);if(built)env()};
+theme();matchMedia('(prefers-color-scheme:dark)').addEventListener('change',theme);new MutationObserver(theme).observe(document.documentElement,{attributes:true});
+
+// деревья: ели и лиственные
+const gr=[0x4f7f5a,0x6b9a62,0x3f6d55,0x86a85f].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:1,flatShading:true})),mTrunk=new THREE.MeshStandardMaterial({color:0x7b5d40,roughness:1});
+for(let i=0;i<70;i++){const a=i*2.4,d=10.2+(i*7%13)*1.15,h=.9+(i%4)*.22,g=new THREE.Group(),m=gr[i%4],t=new THREE.Mesh(new THREE.CylinderGeometry(.07,.12,.8,6),mTrunk);t.position.y=.4;t.castShadow=true;g.add(t);
+ if(i%3){for(let j=0;j<3;j++){const c=new THREE.Mesh(new THREE.ConeGeometry(.78*h*(1-j*.26),1.2*h,8),m);c.position.y=.8+j*.62*h;c.castShadow=true;g.add(c)}}
+ else{const c=new THREE.Mesh(new THREE.IcosahedronGeometry(.85*h,1),m);c.position.y=1.35*h;c.scale.y=1.15;c.castShadow=true;g.add(c)}
+ g.position.set(Math.cos(a)*d,0,Math.sin(a)*d);g.rotation.y=i;S.add(g)}
+
+// здание: фундамент, этажи (по 4 квартиры), крыша
+const mSlab=new THREE.MeshStandardMaterial({color:0x5d5b56,roughness:.9}),mOff=new THREE.MeshStandardMaterial({color:0x33414d,roughness:.14,metalness:.6,envMapIntensity:1.3}),
+mLit=new THREE.MeshStandardMaterial({color:0x33414d,roughness:.2,metalness:.5,envMapIntensity:1,emissive:0xffc169,emissiveIntensity:0}),mBal=new THREE.MeshStandardMaterial({color:0xd8d0c0}),
+gA=new THREE.BoxGeometry(4.1,.96,3.3),gS=new THREE.BoxGeometry(8.7,.1,7),gWx=new THREE.BoxGeometry(.03,.5,.8),gWz=new THREE.BoxGeometry(.8,.5,.03),
+gB=new THREE.BoxGeometry(2,.06,.5),gR=new THREE.BoxGeometry(2,.28,.02);
+/* ---------- Интерьеры: полы, перегородки, мебель ---------- */
+const STY=[{i:0,f:'#cfa87d',f2:'#bf9669',s:0x8a9a8f,b:0x7f9bb0,r:0xd9d2c3,a:0xe2b04c,w:0xe9e4da,k:0xf0ece4},{i:1,f:'#6f5a4a',f2:'#5f4b3c',s:0x3d4a57,b:0x44515e,r:0x9aa0a4,a:0xd0864a,w:0x6a6e72,k:0x3b4046},{i:2,f:'#b9b3a8',f2:'#a8a296',s:0xc4a484,b:0xb59e86,r:0x7b8b78,a:0x5d8a86,w:0xf3efe6,k:0xe8e2d4},{i:3,f:'#9c6a42',f2:'#8c5c37',s:0x6d3f4a,b:0x8a4b52,r:0xc9b99a,a:0xd9b45a,w:0xd8c8ae,k:0xcdb99a}];let K=STY[0];
+const MC={},mt=(c,r=.8)=>MC[c+'_'+r]||(MC[c+'_'+r]=new THREE.MeshStandardMaterial({color:c,roughness:r})),
+tx=(f,w=64,h=64)=>{const c=document.createElement('canvas');c.width=w;c.height=h;f(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return t},
+TW=tx(g=>{for(let i=0;i<8;i++){g.fillStyle=i%2?'#bf9669':'#cfa87d';g.fillRect(0,i*8,64,7);g.fillStyle='#8a6a48';g.fillRect(0,i*8+7,64,1);g.fillRect(i*19%64,i*8,1,7)}}),
+TL=tx(g=>{g.fillStyle='#e8eef0';g.fillRect(0,0,64,64);g.fillStyle='#aebdc3';g.fillRect(0,0,64,2);g.fillRect(0,0,2,64);g.fillRect(32,0,1,64);g.fillRect(0,32,64,1)}),
+FM={t:new THREE.MeshStandardMaterial({map:TL,roughness:.3})},FW=STY.map(q=>new THREE.MeshStandardMaterial({map:tx(g=>{for(let i=0;i<8;i++){g.fillStyle=i%2?q.f2:q.f;g.fillRect(0,i*8,64,7);g.fillStyle='#0004';g.fillRect(0,i*8+7,64,1);g.fillRect(i*19%64,i*8,1,7)}}),roughness:.5})),
+bx=(g,w,h,d,x,y,z,c,r)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mt(c,r));m.position.set(x,y+h/2,z);g.add(m);return m},
+cy=(g,r,h,x,y,z,c,s=20)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,s),mt(c));m.position.set(x,y+h/2,z);g.add(m);return m},
+N=()=>new THREE.Group(),X=(g,o,x,z,r)=>{o.position.set(x,0,z);o.rotation.y=r||0;g.add(o)},
+Q=[[1,1],[1,-1],[-1,1],[-1,-1]],
+bed=(g,x,z,c)=>{const o=N();bx(o,.62,.09,.8,0,0,0,0x7d6048);bx(o,.58,.08,.74,0,.09,.02,0xf5f2ea,.95);bx(o,.58,.012,.44,0,.17,.17,c,.95);bx(o,.24,.05,.12,-.15,.17,-.3,0xffffff,.95);bx(o,.24,.05,.12,.15,.17,-.3,0xffffff,.95);bx(o,.66,.3,.04,0,0,-.42,0x6a503a);X(g,o,x,z)},
+sofa=(g,x,z,r,w,c)=>{const o=N();bx(o,w,.1,.36,0,.03,0,c,.9);bx(o,w,.2,.09,0,.13,-.14,c,.9);bx(o,.09,.15,.36,-w/2+.045,.03,0,c,.9);bx(o,.09,.15,.36,w/2-.045,.03,0,c,.9);bx(o,.15,.11,.05,w/2-.2,.15,-.08,K.a,.9);bx(o,.15,.11,.05,-w/2+.2,.15,-.08,0x5d8a86,.9);X(g,o,x,z,r)},
+tbl=(g,x,z,w,d,h,c)=>{const o=N();bx(o,w,.025,d,0,h,0,c,.5);Q.forEach(([a,b])=>bx(o,.025,h,.025,a*(w/2-.03),0,b*(d/2-.03),0x4a4038));X(g,o,x,z)},
+chr=(g,x,z,r)=>{const o=N();bx(o,.16,.03,.16,0,.12,0,0xb98f63);bx(o,.16,.14,.025,0,.15,-.07,0xb98f63);Q.forEach(([a,b])=>bx(o,.02,.12,.02,a*.06,0,b*.06,0x4a4038));X(g,o,x,z,r)},
+tv=(g,x,z,w,r)=>{const o=N();bx(o,w,.1,.14,0,0,0,0xcdbfa8,.7);bx(o,w*.78,.34,.025,0,.14,0,0x15181a,.25);X(g,o,x,z,r)},
+wd=(g,x,z,w,r)=>{const o=N();bx(o,w,.72,.2,0,0,0,K.w,.8);for(let i=-1;i<=1;i+=2)bx(o,.012,.66,.01,i*w/6,.03,.105,0xb8b2a4);X(g,o,x,z,r)},
+plant=(g,x,z)=>{const o=N();cy(o,.06,.1,0,0,0,0xd8d2c4);const l=new THREE.Mesh(new THREE.IcosahedronGeometry(.1,1),mt(0x5f9460,1));l.position.y=.22;o.add(l);X(g,o,x,z)},
+lamp=(g,x,z)=>{const o=N();cy(o,.012,.4,0,0,0,0x2f3436);cy(o,.05,.012,0,0,0,0x2f3436);const b=new THREE.Mesh(new THREE.CylinderGeometry(.05,.08,.1,14),new THREE.MeshStandardMaterial({color:0xfff1d0,emissive:0xffcf8a,emissiveIntensity:.3}));b.position.y=.43;o.add(b);X(g,o,x,z)},
+rug=(g,x,z,w,d,c)=>bx(g,w,.006,d,x,.005,z,c,1),
+arm=(g,x,z,r,c)=>{const o=N();bx(o,.3,.1,.3,0,.03,0,c,.9);bx(o,.3,.18,.07,0,.13,-.115,c,.9);bx(o,.06,.14,.3,-.12,.03,0,c,.9);bx(o,.06,.14,.3,.12,.03,0,c,.9);X(g,o,x,z,r)},
+shelf=(g,x,z,w,r)=>{const o=N();bx(o,w,.62,.12,0,0,0,K.w,.8);for(let i=0;i<6;i++)bx(o,.07,.12,.06,-w/2+.1+i*(w-.2)/5,.62,0,[0xc0504d,0x4f81bd,0xe0b44c,0x6a9a6a,0xd8d2c4,0x8064a2][i],.9);X(g,o,x,z,r)},
+kit=(g,x,z,len,r)=>{const o=N();bx(o,len,.2,.17,0,0,0,K.k,.7);bx(o,len,.025,.19,0,.2,0,0x5c6268,.4);bx(o,.14,.01,.13,-len/4,.225,0,0x1b1d1f,.3);bx(o,.12,.015,.1,len/4,.225,0,0xc9d2d6,.2);bx(o,.17,.5,.17,len/2+.09,0,0,0xdfe5e8,.3);X(g,o,x,z,r)},
+bath=(g,x,z,len)=>{const o=N();bx(o,.26,.14,len,0,0,0,0xf6f8f9,.2);bx(o,.2,.02,len-.06,0,.14,0,0x9fd0e0,.1);X(g,o,x,z)},
+wc=(g,x,z,r)=>{const o=N();bx(o,.1,.1,.14,0,0,.02,0xf6f8f9,.2);bx(o,.1,.16,.05,0,0,-.07,0xf6f8f9,.2);X(g,o,x,z,r)},
+sink=(g,x,z,r)=>{const o=N();bx(o,.18,.12,.13,0,0,0,0xece8e0,.7);bx(o,.15,.012,.1,0,.12,0,0xf6f8f9,.2);X(g,o,x,z,r)},
+wm=(g,x,z)=>{const o=N();bx(o,.15,.18,.15,0,0,0,0xf4f6f7,.3);cy(o,.045,.01,0,.18,0,0x44525a);X(g,o,x,z)},
+PI=Math.PI;
+function furnish(G,nm,W,L){furn(G,nm,W,L);extra(G,nm,W,L);deco(G,nm,W,L)}
+function furn(G,nm,W,L){const hw=W/2,hl=L/2;
+ if(nm=='Кухня'){kit(G,-hw+.1,0,L-.45,PI/2);if(W>1.1){tbl(G,.1,0,.34,.44,.3,0xe3cfb0);chr(G,.35,0,-PI/2);chr(G,-.15,0,PI/2)}plant(G,hw-.12,hl-.12)}
+ else if(nm=='Сан.'){const n=Math.min(.9,L-.35);bath(G,-hw+.16,-hl+.1+n/2,n);wc(G,hw-.1,hl-.2,PI);sink(G,hw-.1,0,-PI/2);wm(G,hw-.1,-hl+.15)}
+ else if(nm=='Холл'){bx(G,Math.min(W-.2,.7),.22,.14,0,0,hl-.1,0xcdbfa8);rug(G,0,-.05,.3,L*.6,0x8f9a9e);plant(G,-hw+.12,-hl+.12)}
+ else if(nm=='Гард.')wd(G,0,hl-.1,W-.2,PI);
+ else if(nm=='Гостиная'){tv(G,0,-hl+.1,Math.min(.9,W-.3));sofa(G,0,hl-.3,PI,Math.min(1,W-.3),K.s);rug(G,0,.1,W*.75,L*.5,K.r);tbl(G,0,.1,.4,.26,.1,0xd8c3a5);plant(G,hw-.15,-hl+.15);lamp(G,-hw+.15,hl-.15)}
+ else if(nm=='Детская'){bed(G,-hw+.4,-hl+.43,0xe8b872);tbl(G,hw-.35,hl-.2,.5,.22,.27,0xe3cfb0);chr(G,hw-.35,hl-.5);cy(G,.3,.006,hw-.5,0,-.1,0xe9a8a0,28)}
+ else if(nm=='Кабинет'){tbl(G,0,-hl+.15,.6,.24,.27,0x8a6a48);chr(G,0,-hl+.45,PI);wd(G,-hw+.1,.35,Math.max(.4,L-.9),PI/2);plant(G,hw-.15,hl-.15)}
+ else{bed(G,0,-hl+.43,K.b);bx(G,.12,.12,.12,-.4,0,-hl+.1,0x7d6048);bx(G,.12,.12,.12,.4,0,-hl+.1,0x7d6048);rug(G,0,-hl+.62,W*.7,.7,K.r);
+  if(L>1.4)wd(G,0,hl-.12,W-.3,PI);if(nm!='Спальня'){sofa(G,hw-.25,.1,-PI/2,.7,K.s);tv(G,-hw+.12,.1,.6,PI/2);lamp(G,-hw+.15,-hl+.15)}}}
+function wall(T,s,X0,Z0){const[x1,y1,x2,y2]=s,ext=(x1==x2&&(x1==0||x1==100))||(y1==y2&&(y1==0||y1==70)),ax=X0(x1),az=Z0(y1),ex=X0(x2),ez=Z0(y2),hz=y1==y2,len=Math.hypot(ex-ax,ez-az),t=ext?.06:.035,H=ext?.46:.36;
+ (!ext&&len>.7?[[0,.3],[.58,1]]:[[0,1]]).forEach(([p,q])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(hz?(q-p)*len:t,H,hz?t:(q-p)*len),mt(0xf3f0ea,.9));
+  m.position.set(ax+(ex-ax)*(p+q)/2,H/2,az+(ez-az)*(p+q)/2);m.castShadow=m.receiveShadow=true;T.add(m)});if(!ext&&len>.7){const dx=(ex-ax)/len,dz=(ez-az)/len,gw=.25*len,d=new THREE.Mesh(new THREE.BoxGeometry(hz?.02:gw,H*.95,hz?gw:.02),mt(0xc9a77c,.6));d.position.set(ax+(ex-ax)*.3-dz*gw/2,H*.475,az+(ez-az)*.3+dx*gw/2);T.add(d)}}
+const TPLS={};
+function interior(a){const r=a.r,s=(a.n*3+a.f)%4,kk=r+'_'+s;if(!TPLS[kk]){K=STY[s];const T=N(),X0=px=>2.05-px*.041,Z0=py=>1.65-py*.0471,seen={};
+ for(const[x,y,w,h,nm]of PL[r]){const ww=w*.041,dd=h*.0471,cx=X0(x+w/2),cz=Z0(y+h/2),G=N(),p=new THREE.PlaneGeometry(ww,dd).rotateX(-PI/2),u=p.attributes.uv;
+  for(let i=0;i<u.count;i++)u.setXY(i,u.getX(i)*ww*3,u.getY(i)*dd*3);
+  const fl=new THREE.Mesh(p,nm=='Сан.'||nm=='Кухня'||nm=='Холл'?FM.t:FW[K.i]);fl.receiveShadow=true;fl.position.set(cx,.004,cz);T.add(fl);
+  G.position.set(cx,0,cz);G.rotation.y=ww>dd?PI/2:0;furnish(G,nm,Math.min(ww,dd),Math.max(ww,dd));T.add(G);
+  [[x,y,x+w,y],[x,y+h,x+w,y+h],[x,y,x,y+h],[x+w,y,x+w,y+h]].forEach(s=>{const k=s.join();if(!seen[k]){seen[k]=1;wall(T,s,X0,Z0)}})}
+ bx(T,4.16,.09,3.36,0,-.095,0,0xcfcac0,.9);TPLS[kk]=T}
+ const v=TPLS[kk].clone();v.scale.set(a.sx,1,a.sz);v.position.y=-.48;return v}
+
+/* ---------- Москва-Сити: фасад, башни, река, дороги, машины ---------- */
+const fd=(g,o)=>{const l=g.createLinearGradient(0,o,256,o+64);l.addColorStop(0,'#a9c3d4');l.addColorStop(1,'#6c91ab');g.fillStyle=l;g.fillRect(0,o,256,64);g.fillStyle='#ffffff30';for(let i=0;i<4;i++)g.fillRect(i*64+6,o+4,22,40);g.fillStyle='#dfe5e8';g.fillRect(0,o+50,256,14);for(let i=0;i<=4;i++)g.fillRect(i*64-1,o,3,50)},
+FAC=tx(g=>fd(g,0),256,64),TF=tx(g=>{for(let j=0;j<4;j++)fd(g,j*64)},256,256),
+TE=tx(g=>{g.fillStyle='#000';g.fillRect(0,0,256,256);for(let j=0;j<4;j++)for(let i=0;i<4;i++)if(Math.abs(Math.sin(i*12.9+j*7.2)*43758%1)>.55){g.fillStyle='#ffd08a';g.fillRect(i*64+4,j*64+4,56,44)}},256,256),
+mTw=new THREE.MeshStandardMaterial({color:0xb4c8d6,roughness:.1,metalness:.8,map:TF,emissive:0xffffff,emissiveMap:TE,emissiveIntensity:0}),
+ft=(g,w,h)=>{const u=g.attributes.uv;for(let i=0;i<u.count;i++)u.setXY(i,u.getX(i)*w,u.getY(i)*h);return g},
+gF=new THREE.BoxGeometry(.16,.98,.16),mAl=new THREE.MeshStandardMaterial({color:0xb7c0c6,roughness:.25,metalness:.85}),CAR=[],cc=[0xd23a3a,0xe8e8e8,0x2e5fa3,0x1f1f22,0xf0b429,0x8f959a,0x2f7d57],
+tb=(g,bw,bh,bd,y,rot,ox)=>{const m=new THREE.Mesh(ft(new THREE.BoxGeometry(bw,bh,bd),bw/4,bh/3.84),mTw);m.position.set(ox||0,y+bh/2,0);m.rotation.y=rot||0;g.add(m)},
+tw=(x,z,w,h,k)=>{const g=N();
+ if(k==0){tb(g,w,h,w,0);tb(g,w*.6,h*.1,w*.6,h);cy(g,.05,h*.18,0,h*1.1,0,0xdfe5e8,6)}
+ else if(k==1){for(let i=0;i<14;i++)tb(g,w*(1-i*.015),h/14,w*(1-i*.015),i*h/14,i*.13)}
+ else if(k==2){tb(g,w,h*.55,w,0);tb(g,w*.75,h*.3,w*.75,h*.55);tb(g,w*.5,h*.2,w*.5,h*.85)}
+ else{tb(g,w*.6,h,w,0,0,-w*.35);tb(g,w*.6,h*.8,w,0,0,w*.35)}
+ g.position.set(x,0,z);S.add(g)},
+car=c=>{const g=N(),b=new THREE.Mesh(new THREE.BoxGeometry(.5,.11,.24),mt(c,.35)),t=new THREE.Mesh(new THREE.BoxGeometry(.26,.1,.2),mt(0x1d2a33,.15));b.position.y=.1;t.position.set(-.02,.2,0);g.add(b,t);
+ for(const[x,z]of[[.16,.12],[.16,-.12],[-.16,.12],[-.16,-.12]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.04,10).rotateX(PI/2),mt(0x111111));w.position.set(x,.05,z);g.add(w)}return g},
+lp=(x,z)=>{const g=N(),p=new THREE.Mesh(new THREE.CylinderGeometry(.03,.04,1.1),mPole),b=new THREE.Mesh(new THREE.SphereGeometry(.09,12,8),mBulb);p.position.y=.55;b.position.y=1.15;g.add(p,b);g.position.set(x,0,z);S.add(g)};
+for(let i=0;i<20;i++){const a=.35+i*.31;if(Math.abs(a-5.44)<.3)continue;const r=42+(i*7%5)*4.5;tw(Math.cos(a)*r,-Math.sin(a)*r,3.6+(i%3)*.7,22+(i*11%8)*4.2,i%4)}
+const water=new THREE.MeshStandardMaterial({color:0x4f86a8,roughness:.08,metalness:.4});
+mk(new THREE.RingGeometry(28.2,35,96,1,.5,3.6).rotateX(-PI/2),water,.02);mk(new THREE.RingGeometry(27.5,28.2,96,1,.5,3.6).rotateX(-PI/2),plz,.03);mk(new THREE.RingGeometry(35,35.7,96,1,.5,3.6).rotateX(-PI/2),plz,.03);
+const av=new THREE.Mesh(new THREE.BoxGeometry(2.4,.04,64),road),ln=new THREE.Mesh(new THREE.BoxGeometry(.06,.045,64),new THREE.MeshBasicMaterial({color:0xe9e6dc})),lot=new THREE.Mesh(new THREE.BoxGeometry(11,.03,4.4),road);
+av.position.set(26.4,.02,30.1);ln.position.copy(av.position);av.rotation.y=ln.rotation.y=.72;lot.position.set(-15,.015,12);S.add(av,ln,lot);
+for(let i=0;i<8;i++){const t=11+i*7,s=Math.sin(.72),c=Math.cos(.72);lp(s*t+c*1.8,c*t-s*1.8);lp(s*(t+3.5)-c*1.8,c*(t+3.5)+s*1.8)}
+for(let i=0;i<14;i++){const g=car(cc[i%7]);CAR.push({g,r:i%2?7.55:8.05,s:(i%2?1:-1)*.0045,a:i*.9});S.add(g)}
+for(let i=0;i<10;i++){const g=car(cc[i*3%7]);g.position.set(-19.5+(i%5)*2.1,0,12+(i<5?-1.2:1.2));g.rotation.y=PI/2;S.add(g)}
+for(let i=0;i<28;i++){const a=i/28*6.283,b=new THREE.Mesh(new THREE.SphereGeometry(.22+(i%3)*.05,10,8),gr[i%4]);b.position.set(Math.cos(a)*6.45,.15,Math.sin(a)*6.45);b.scale.y=.7;S.add(b)}
+function crown(g){[[7.2,1.1,5.9,.22],[5,1.3,4,1.32],[3,1.5,2.4,2.62]].forEach(([w,h,d,y])=>tb(g,w,h,d,y));cy(g,.07,3,0,4.1,0,0xdfe5e8,8);const b=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),new THREE.MeshStandardMaterial({color:0xff3b30,emissive:0xff3b30,emissiveIntensity:1.5}));b.position.y=7.25;g.add(b)}
+function extra(G,nm,W,L){const hw=W/2,hl=L/2,i=K.i;
+ if(nm=='Гостиная'){if(i!=2)arm(G,hw-.28,-.2,-PI/2,K.s);if(i&1)shelf(G,-hw+.1,-.15,Math.min(.9,L-1),PI/2);if(i==2){tbl(G,hw-.45,-.35,.3,.46,.27,K.w);chr(G,hw-.2,-.35,-PI/2);chr(G,hw-.7,-.35,PI/2)}}
+ else if(nm=='Спальня'&&W>1.5){if(i==1)shelf(G,hw-.1,.05,.8,-PI/2);if(i==2){tbl(G,hw-.15,.3,.22,.5,.27,K.w);bx(G,.1,.008,.14,hw-.15,.295,.3,0x2b2e31);chr(G,hw-.45,.3,PI/2)}if(i==3)arm(G,hw-.28,.2,-PI/2,K.s);if(i==0)plant(G,hw-.15,.3)}
+ else if(nm=='Детская'||nm=='Кабинет'){if(i&1)shelf(G,hw-.1,0,.6,-PI/2);else plant(G,-hw+.15,hl-.15)}}
+/* ---------- Основание, фон, детали ---------- */
+const uvs=gA.attributes.uv;for(let i=8;i<16;i++)uvs.setXY(i,.5,.1); // крыши и низ квартир — бетон
+const nzT=(a,b,n,rp)=>{const t=tx(g=>{g.fillStyle=a;g.fillRect(0,0,128,128);for(let i=0;i<n;i++){g.fillStyle=b[i%b.length];g.fillRect(Math.random()*128,Math.random()*128,1+Math.random()*2,1+Math.random()*2)}},128,128);t.repeat.set(rp,rp);return t};
+lawn.map=nzT('#ffffff',['#e4e8de','#f2f6ea','#d6dccb'],900,26);road.map=nzT('#ffffff',['#dcdcdc','#efefef','#cfcfcf'],700,10);
+plz.map=tx(g=>{g.fillStyle='#fff';g.fillRect(0,0,64,64);g.fillStyle='#d4d1c9';g.fillRect(0,0,64,2);g.fillRect(0,0,2,64);g.fillRect(32,0,1,64);g.fillRect(0,32,64,1)});plz.map.repeat.set(9,9);
+const skyC=document.createElement('canvas');skyC.width=512;skyC.height=256;
+const skyT=new THREE.CanvasTexture(skyC),sky=new THREE.Mesh(new THREE.SphereGeometry(320,32,16),new THREE.MeshBasicMaterial({map:skyT,side:THREE.BackSide,fog:false,depthWrite:false}));sky.renderOrder=-1;S.add(sky);
+function skyDraw(){const g=skyC.getContext('2d'),l=g.createLinearGradient(0,0,0,256);l.addColorStop(0,css('--s1'));l.addColorStop(.5,css('--s2'));l.addColorStop(1,css('--s2'));g.fillStyle=l;g.fillRect(0,0,512,256);
+ for(let i=0;i<70;i++){const r=14+(i*31%26);g.fillStyle=dark?'#ffffff10':'#ffffff55';g.beginPath();g.ellipse(i*97%512,20+(i*53%90),r*2.2,r*.6,0,0,6.3);g.fill()}
+ if(dark){g.fillStyle='#fff';for(let i=0;i<90;i++)g.fillRect(i*131%512,i*71%110,1,1)}skyT.needsUpdate=true}
+const csT=tx(g=>{const r=g.createRadialGradient(32,32,6,32,32,32);r.addColorStop(0,'rgba(0,0,0,.5)');r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(0,0,64,64)}),
+cs=new THREE.Mesh(new THREE.PlaneGeometry(19,17).rotateX(-PI/2),new THREE.MeshBasicMaterial({map:csT,transparent:true,depthWrite:false})),mSt=new THREE.MeshStandardMaterial({color:0xcfcac0,roughness:.8}),
+gT=ft(new THREE.BoxGeometry(12.6,.1,10.4),6,5),mTer=new THREE.MeshStandardMaterial({color:0xd9d5cc,roughness:.8,map:TL});
+cs.position.y=.056;S.add(cs);[[10.2,.14,8.8],[9.8,.28,8.4]].forEach(([w,h,d])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mSt);m.position.y=h/2;m.receiveShadow=true;S.add(m)});
+const mDash=new THREE.MeshBasicMaterial({color:0xe9e6dc});for(let i=0;i<30;i++)mk(new THREE.RingGeometry(7.76,7.84,4,1,i*.2094,.1).rotateX(-PI/2),mDash,.016);
+const bn=(x,z,r)=>{const g=N();bx(g,.5,.04,.14,0,.12,0,0xb98f63);bx(g,.5,.1,.03,0,.17,-.07,0xb98f63);[-.2,.2].forEach(i=>bx(g,.03,.12,.12,i,0,0,0x2f3436));X(S,g,x,z,r)};
+for(let i=0;i<14;i++){const a=i/14*6.283+.2;if(Math.abs(a-.85)<.35)continue;bn(Math.cos(a)*9.7,Math.sin(a)*9.7,Math.atan2(-Math.cos(a),-Math.sin(a)))}
+{const g=N();cy(g,1.25,.25,0,0,0,0xcfcac0,32);cy(g,1.1,.04,0,.2,0,0x5fa0bf,32);cy(g,.12,.55,0,.2,0,0xcfcac0,12);cy(g,.45,.05,0,.6,0,0xcfcac0,20);for(let i=0;i<6;i++)cy(g,.02,.45,Math.cos(i)*.3,.25,Math.sin(i)*.3,0xdff3ff,6);g.position.set(-11,0,-9);S.add(g)}
+{const g=N();[-.5,.5].forEach(x=>{bx(g,.05,.6,.05,x,0,-.18,0xd0584a);bx(g,.05,.6,.05,x,0,.18,0xd0584a)});bx(g,1.1,.05,.05,0,.6,0,0xd0584a);[-.22,.22].forEach(x=>{bx(g,.01,.4,.01,x,.2,0,0x333333);bx(g,.16,.02,.08,x,.18,0,0x2f6db5)});bx(g,1.2,.04,.8,0,0,.9,0xe6d3a3);g.position.set(-13,0,3);S.add(g)}
+const PPL=[];for(let i=0;i<16;i++){const g=N();cy(g,.035,.14,0,.02,0,[0x3b5b8c,0xb04a4a,0x4a8c6a,0x555555,0xd0a040][i%5],8);const h=new THREE.Mesh(new THREE.SphereGeometry(.04,8,6),mt(0xe8c4a0));h.position.y=.19;g.add(h);S.add(g);PPL.push({g,a:i*.4,s:(i%2?1:-1)*(.002+(i%3)*.0006),r:6.85+(i%3)*.08})}
+function deco(G,nm,W,L){const hw=W/2,hl=L/2;
+ if(nm=='Гостиная'){cy(G,.03,.07,0,.125,.1,0xe8e2d4);bx(G,.12,.015,.08,.08,.125,.1,K.a);bx(G,.1,.012,.07,.09,.14,.1,0x4f81bd)}
+ else if(nm=='Кухня'&&W>1.1){cy(G,.045,.008,.1,.325,-.08,0xffffff);cy(G,.045,.008,.1,.325,.08,0xffffff);cy(G,.025,.05,.1,.325,0,0x6a9a6a)}
+ else if(nm=='Спальня'||nm=='Комната'||nm=='Студия')[-.4,.4].forEach(x=>{cy(G,.015,.1,x,.12,-hl+.1,0x2f3436,8);cy(G,.04,.05,x,.22,-hl+.1,0xfff1d0,12)})}
+const fnd=new THREE.Mesh(new THREE.BoxGeometry(9.4,Y0,8).translate(0,Y0/2,0),mSlab);fnd.receiveShadow=true;S.add(fnd);
+const F=[],mGl=new THREE.MeshStandardMaterial({color:0xa9d0d6,transparent:true,opacity:.38,roughness:.1,metalness:.3}),edge=new THREE.LineSegments(new THREE.EdgesGeometry(gA),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.9}));
+for(let f=1;f<=FL;f++){
+ const g=new THREE.Group(),o={f,g,y:Y0+(f-1)*FH,op:0,ot:0,lift:0,lt:0},sl=new THREE.Mesh(gS,mSlab);sl.position.y=.05;g.add(sl);const fx=N();Q.forEach(([p,q])=>{const c=new THREE.Mesh(gF,mAl);c.position.set(p*4.2,.58,q*3.35);fx.add(c)});g.add(fx);o.fx=fx;o.sl=sl;const tr=new THREE.Mesh(gT,mTer);tr.position.y=.04;tr.receiveShadow=true;g.add(tr);o.tr=tr;
+ A.filter(a=>a.f==f).forEach(a=>{
+  const sx=a.k%2?1:-1,sz=a.k<2?-1:1,m=new THREE.Mesh(gA,new THREE.MeshStandardMaterial({color:C.wall,roughness:.85,transparent:true,map:FAC})),d=new THREE.Group();
+  Object.assign(a,{m,d,sx,sz,F:o});a.v=interior(a);m.add(a.v);m.userData=a;m.castShadow=m.receiveShadow=true;m.add(d);g.add(m);
+  for(let i=-1;i<=1;i++){const w=new THREE.Mesh(gWz,(a.n+i)%3?mOff:mLit);w.position.set(i*1.2,0,sz*1.66);d.add(w)}
+  for(let j=-1;j<=1;j+=2){const w=new THREE.Mesh(gWx,(a.n+j)%3?mOff:mLit);w.position.set(sx*2.06,0,j*.75);d.add(w)}
+  if(a.r&&a.f%2==a.k%2){const b=new THREE.Mesh(gB,mBal),rl=new THREE.Mesh(gR,mGl);b.position.set(0,-.45,sz*1.9);rl.position.set(0,-.3,sz*2.14);d.add(b,rl)} // балкон
+ });
+ F.push(o);S.add(g)}
+const roof={g:new THREE.Group(),y:Y0+FL*FH,lift:0,lt:0},rb=new THREE.Mesh(new THREE.BoxGeometry(8.8,.22,7.2),mSlab),rc=new THREE.Mesh(new THREE.BoxGeometry(2.2,.7,1.6),mBal);
+rb.position.y=.11;rc.position.set(1.4,.57,-.8);rb.castShadow=rc.castShadow=true;roof.g.add(rb,rc);crown(roof.g);S.add(roof.g);built=1;theme();
+
+/* ---------- Состояние и камера ---------- */
+let mode='home',focus=0,selA=null,hovA=null,hovF=0,t0=null,idle=0,tipT=0,sort='a1',rooms='all',amin=20,amax=110;
+const narrow=()=>st.clientWidth<st.clientHeight,cam={t:.7,p:1.2,r:46,y:11,x:0,z:0},goal={...cam},vel={t:0,p:0};
+const ok=a=>(rooms=='all'||a.r==rooms)&&a.area>=amin&&a.area<=amax;
+function home(){mode='home';focus=0;closePanel();F.forEach(o=>{o.ot=0;o.lt=0});roof.lt=0;
+ Object.assign(goal,{p:1.2,r:narrow()?66:46,y:11,x:0,z:0});$('#back').hidden=$('#fl').hidden=true;render()}
+function floor(n){if(selA&&selA.f!=n)closePanel();mode='floor';focus=n;F.forEach(o=>{o.ot=o.f==n?1:0;o.lt=o.f>n?9:0});roof.lt=9;
+ Object.assign(goal,{p:.55,r:narrow()?17:11,y:F[n-1].y+.5,x:0,z:0});$('#back').hidden=$('#fl').hidden=false;$('#fl').textContent='Этаж '+n;hovA=null;hovF=0;tip.hidden=true}
+function select(a){selA=a;if(mode!='floor'||focus!=a.f)floor(a.f);Object.assign(goal,{x:a.sx*2.32,z:a.sz*1.92,r:narrow()?9:6.5,p:.72});showPanel(a);render();cards.querySelector('.sel')?.scrollIntoView({block:'nearest',behavior:'smooth'})}
+function closePanel(){if(selA&&mode=='floor')Object.assign(goal,{x:0,z:0,r:narrow()?17:11,p:.55});selA=null;panel.classList.remove('open')}
+function showPanel(a){panel.innerHTML=`<button class="x" aria-label="Закрыть">✕</button><div class="ph">Квартира №${a.n}, этаж ${a.f}</div><span class="chip${a.sold?' sold':''}">${a.sold?'Продана':'В продаже'}</span> <span class="mut">${TN[a.r]}</span>
+<div class="big">${a.area} м²</div><div class="price">${fm(a.price)} ₽</div><div class="mut">${fm(a.ppm)} ₽ за м²</div>${plan(a)}
+<button class="btn wide"${a.sold?' disabled':''}>${a.sold?'Квартира продана':'Оставить заявку'}</button>`;panel.classList.add('open')}
+
+/* ---------- Мышь и касания ---------- */
+const ray=new THREE.Raycaster(),mv=new THREE.Vector2(),P=new Map();let down=null,pd=0;
+function pick(e){const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,cam3);
+ const l=A.filter(a=>a.F.g.visible&&(mode=='home'||a.f==focus)).map(a=>a.m),h=ray.intersectObjects(l,false)[0];return h&&h.object.userData}
+function hover(e){const a=pick(e);hovA=mode=='floor'?a:null;hovF=a&&mode=='home'?a.f:0;cv.style.cursor=a?'pointer':'grab';
+ if(a){const r=st.getBoundingClientRect();tip.hidden=false;tip.textContent=mode=='home'?'Этаж '+a.f:`Кв. ${a.n}, ${a.area} м²`;tip.style.left=e.clientX-r.left+14+'px';tip.style.top=e.clientY-r.top+14+'px'}else tip.hidden=true}
+function click(e){const a=pick(e);if(!a){hovF=0;hovA=null;return}
+ if(e.pointerType=='touch'&&mode=='home'&&hovF!=a.f){hover(e);clearTimeout(tipT);tipT=setTimeout(()=>{tip.hidden=true},2500);return} // первый тап подсвечивает этаж
+ mode=='home'?floor(a.f):select(a)}
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX,y:e.clientY});idle=performance.now();
+ if(P.size==1)down={m:0};if(P.size==2){const[p,q]=[...P.values()];pd=Math.hypot(p.x-q.x,p.y-q.y);down.m=99}});
+cv.addEventListener('pointermove',e=>{const o=P.get(e.pointerId);if(!o){hover(e);return}
+ idle=performance.now();tip.hidden=true;const n={x:e.clientX,y:e.clientY};P.set(e.pointerId,n);
+ if(P.size==2){const[p,q]=[...P.values()],d=Math.hypot(p.x-q.x,p.y-q.y);goal.r=cl(goal.r*pd/d,3.5,70);pd=d}
+ else{const dx=n.x-o.x,dy=n.y-o.y;down.m+=Math.abs(dx)+Math.abs(dy);goal.t-=dx*.007;goal.p=cl(goal.p-dy*.005,.15,1.45);vel.t=-dx*.0035;vel.p=-dy*.0025}});
+cv.addEventListener('pointerup',e=>{P.delete(e.pointerId);if(down&&down.m<6&&!P.size)click(e);if(!P.size)down=null});
+cv.addEventListener('pointercancel',e=>{P.delete(e.pointerId);down=null});
+cv.addEventListener('pointerleave',e=>{if(e.pointerType=='mouse'&&!P.size){hovA=null;hovF=0;tip.hidden=true}});
+cv.addEventListener('wheel',e=>{e.preventDefault();goal.r=cl(goal.r*(1+e.deltaY*.001),3.5,70);idle=performance.now()},{passive:false});
+new ResizeObserver(()=>{const w=st.clientWidth,h=st.clientHeight;if(!w||!h)return;R.setSize(w,h,false);cam3.aspect=w/h;cam3.updateProjectionMatrix()}).observe(st);
+
+/* ---------- Цикл отрисовки ---------- */
+const TC=new THREE.Color();
+function paint(a){TC.copy(a.sold?C.sold:C.wall);
+ if(!ok(a))TC.copy(C.dim); // не подходит под фильтр
+ else if(a===selA)TC.copy(C.acc);
+ else if(a===hovA)TC.lerp(C.acc,.85);
+ else if(hovF&&mode=='home')TC.lerp(a.f==hovF?C.acc:C.dim,a.f==hovF?.5:.3);
+ a.m.material.color.lerp(TC,.15)}
+function tick(now){requestAnimationFrame(tick);
+ if(t0===null){t0=now/1000;$('#load').classList.add('off')}
+ const T=now/1000-t0,kd=cl((T-4.9)/.9);
+ fnd.scale.y=Math.max(.001,eb(cl(T/.6)));
+ F.forEach((o,i)=>{const s=cl((T-.5-i*.2)/.9);o.op+=(o.ot-o.op)*.08;o.lift+=(o.lt-o.lift)*.07;o.g.visible=s>0&&o.lift<8.5;o.g.position.y=o.y-(1-eb(s))*7+o.lift;o.fx.visible=o.op<.5;o.sl.visible=o.op<.03;o.tr.visible=o.op>.03;o.tr.scale.set(.7+.3*o.op,1,.7+.3*o.op)});
+ roof.lift+=(roof.lt-roof.lift)*.07;const rs=cl((T-5.4)/.6);roof.g.visible=rs>0&&roof.lift<8.5;roof.g.scale.setScalar(Math.max(rs,.001));roof.g.position.y=roof.y+roof.lift;
+ mLit.emissiveIntensity=kd*(dark?2.4:.7);mBulb.emissiveIntensity=kd*(dark?3:.1);mTw.emissiveIntensity=kd*(dark?1.8:.35);PPL.forEach(p=>{p.a+=RM?0:p.s;p.g.position.set(Math.cos(p.a)*p.r,Math.abs(Math.sin(p.a*70))*.012,Math.sin(p.a)*p.r)});CAR.forEach(c=>{c.a+=RM?0:c.s;c.g.position.set(Math.cos(c.a)*c.r,0,Math.sin(c.a)*c.r);c.g.rotation.y=-c.a-PI/2+(c.s<0?PI:0)});
+ A.forEach(a=>{const o=a.F.op;a.m.position.set(a.sx*(2.1+.22*o),.58,a.sz*(1.7+.22*o));a.d.scale.setScalar(Math.max(kd,.001));paint(a);a.v.visible=o>.02;a.m.material.opacity=1-.82*o;a.m.material.depthWrite=o<.5});const eT=selA||hovA;edge.visible=!!eT;if(eT&&edge.parent!==eT.m)eT.m.add(edge);
+ if(!P.size){goal.t+=vel.t;goal.p=cl(goal.p+vel.p,.15,1.45);vel.t*=.93;vel.p*=.93;if(mode=='home'&&performance.now()-idle>3000&&!RM)goal.t+=.0022} // инерция и автоповорот
+ for(const k of['t','p','r','y','x','z'])cam[k]+=(goal[k]-cam[k])*.08;
+ const sp=Math.sin(cam.p);cam3.position.set(cam.x+cam.r*sp*Math.sin(cam.t),cam.y+cam.r*Math.cos(cam.p),cam.z+cam.r*sp*Math.cos(cam.t));cam3.lookAt(cam.x,cam.y,cam.z);
+ R.render(S,cam3)}
+
+/* ---------- Список, фильтры, сортировка ---------- */
+function render(){
+ const L=A.filter(ok).sort((p,q)=>(sort=='a1'?p.area-q.area:sort=='a2'?q.area-p.area:p.price-q.price)||p.id-q.id);
+ $('#cnt').textContent=`Найдено: ${L.length} из ${A.length}`;
+ cards.innerHTML=L.map(a=>`<div class="card${a.sold?' sold':''}${a===selA?' sel':''}" data-i="${a.id}"><div class="mini">${plan(a,0)}</div><div><b>${a.area} м²</b> <span class="mut">${TN[a.r]}</span><div class="mut">Этаж ${a.f}, кв. ${a.n}</div><div class="pr">${a.sold?'Продана':fm(a.price)+' ₽'}</div></div></div>`).join('')||'<p class="mut">Нет квартир по таким условиям. Расширьте фильтр.</p>'}
+const seg=(id,fn)=>$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$(id).querySelectorAll('button').forEach(x=>x.classList.toggle('on',x==b));fn(b.dataset.v);render()});
+seg('#sort',v=>sort=v);seg('#rm',v=>rooms=v);
+const r1=$('#r1'),r2=$('#r2');
+r1.oninput=r2.oninput=e=>{amin=+r1.value;amax=+r2.value;if(amin>amax){if(e.target==r1)r2.value=amax=amin;else r1.value=amin=amax}$('#rl').textContent=`Площадь от ${amin} до ${amax} м²`;render()};
+cards.addEventListener('pointerover',e=>{const c=e.target.closest('.card');hovA=c?A[c.dataset.i]:null;hovF=hovA?hovA.f:0}); // подсветка в 3D
+cards.addEventListener('pointerleave',()=>{hovA=null;hovF=0});
+cards.addEventListener('click',e=>{const c=e.target.closest('.card');if(c){setTab('3d');select(A[c.dataset.i])}});
+const setTab=t=>{document.body.dataset.tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==t))};
+$('.tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.t)});
+$('#back').onclick=home;$('#rebuild').onclick=()=>{t0=null;home()};
+panel.addEventListener('click',e=>{if(e.target.closest('.x')){closePanel();render()}else if(e.target.closest('.btn:not(:disabled)'))openM()});
+
+/* ---------- Заявка ---------- */
+const md=$('#modal'),fe=$('#fm'),FORM=fe.innerHTML,openM=()=>{fe.innerHTML=FORM;md.hidden=false;fe.querySelector('input').focus()};
+$('#cta').onclick=openM;
+md.addEventListener('click',e=>{if(e.target==md||e.target.closest('[data-x]'))md.hidden=true});
+fe.addEventListener('submit',e=>{e.preventDefault();fe.innerHTML='<h3>Заявка принята</h3><p class="mut">Менеджер свяжется с вами в течение 15 минут.</p><button type="button" class="btn" data-x>Закрыть</button>'});
+
+home();requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
